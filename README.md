@@ -1,0 +1,1 @@
+# Git-Credential-Azure-ManagedIdentity
