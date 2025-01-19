@@ -2,9 +2,9 @@
 
 # Function to download jq to a temporary location
 download_jq() {
-    local jq_temp="$HOME/jq"
+    local jq_temp="/tmp/jq"
     if [ ! -f "$jq_temp" ]; then
-        curl -s -L -o "$jq_temp" "https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-amd64"
+        curl -L -o "$jq_temp" "https://github.com/jqlang/jq/releases/download/jq-1.7.1/jq-linux-amd64"
         chmod +x "$jq_temp"
     fi
     echo "$jq_temp"
@@ -13,8 +13,9 @@ download_jq() {
 # Function to get the access token from Azure Managed Identity
 get_access_token() {
     local resource=$1
+    local query_param=$2
     local jq_path=$(download_jq)
-    local token_response=$(curl -s "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=${resource}" -H "Metadata: true")
+    local token_response=$(curl -s "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=${resource}${query_param}" -H "Metadata: true")
     echo $(echo $token_response | "$jq_path" -r .access_token)
 }
 
@@ -28,11 +29,24 @@ get_git_credentials() {
 # Main script execution
 if [ "$1" == "get" ]; then
     resource="499b84ac-1321-427f-aa17-267ca6975798"
-    access_token=$(get_access_token $resource)
+    query_param=""
+
+    while IFS= read -r line; do
+        if [[ $line == username=* ]]; then
+            value="${line#username=}"
+            if [[ $value == /subscription/* ]]; then
+                query_param="&msi_res_id=$value"
+            elif [[ ${#value} -eq 36 ]]; then
+                query_param="&client_id=$value"
+            else
+                query_param="&username=$value"
+            fi
+        fi
+    done
+
+    access_token=$(get_access_token $resource "$query_param")
     get_git_credentials $access_token
 else
-    echo "Unsupported command: $1"
+    echo "Missing or unsupported command: '$1'"
     exit 1
 fi
-
-
