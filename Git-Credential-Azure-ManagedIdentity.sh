@@ -52,10 +52,14 @@ if [ "$1" == "get" ]; then
         if [[ $line == username=* ]]; then
             value="${line#username=}"
             if [[ $value == /subscriptions/* ]]; then
+                # Debug messages to stdout, will be ignored by git credential helper
+                [ -n "$GIT_TRACE" ] && echo "Using MSI Resource ID: $value"
                 query_param="&msi_res_id=$value"
             elif [[ ${#value} -eq 36 ]]; then
+                [ -n "$GIT_TRACE" ] && echo "Using Client ID: $value"
                 query_param="&client_id=$value"
             else
+                [ -n "$GIT_TRACE" ] && echo "Using custom query parameter: $value"
                 query_param="&$value"
             fi
         fi
@@ -69,6 +73,6 @@ if [ "$1" == "get" ]; then
         exit $exit_code
     fi
 else
-    echo "Missing or unsupported command: '$1'"
+    echo "Error: Missing or unsupported command: '$1'" >&2
     exit 1
 fi

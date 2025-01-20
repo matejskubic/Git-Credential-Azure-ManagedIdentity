@@ -52,3 +52,22 @@ git clone https://12345678-1234-1234-1234-123456789abc@dev.azure.com/your_organi
 ```
 
 This setup allows the Git client to use the Azure Managed Identity to authenticate with Azure DevOps or other Git services that support OAuth tokens from Microsoft Azure/Entra ID.
+
+## Troubleshooting
+
+If you encounter issues, check the following:
+
+1. **Debug Logging**: Enable debug output with GIT_TRACE environment variable:
+    ```bash
+    GIT_TRACE=1 git clone https://dev.azure.com/... > git-credential.log 2>&1
+    ```
+    Note: Only critical errors are written to stderr, debug messages go to stdout.
+
+2. **Managed Identity**: Verify that the managed identity is properly configured:
+    ```bash
+    curl -H "Metadata: true" "http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://management.azure.com/"
+    ```
+
+3. **Permissions**: Ensure the managed identity has appropriate permissions in Azure DevOps.
+
+4. **URL Encoding**: When using MSI Resource IDs, the script automatically handles URL encoding.
